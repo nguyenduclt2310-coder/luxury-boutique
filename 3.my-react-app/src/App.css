@@ -1,0 +1,41 @@
+/* Hiệu ứng trượt và mờ ảo chuẩn */
+@keyframes slideFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(35px) scale(0.96);
+        filter: blur(3px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Khung Form Doanh Nghiệp có Animation */
+.auth-card {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    animation: slideFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Hiệu ứng mượt cho nút bấm và ô nhập */
+input,
+button,
+a {
+    transition: all 0.2s ease-in-out !important;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+}
