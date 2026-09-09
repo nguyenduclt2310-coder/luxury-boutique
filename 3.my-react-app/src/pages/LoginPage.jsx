@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Mail, Lock, Eye, EyeOff, RotateCw, ArrowRight, CheckSquare } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, RotateCw, ArrowRight } from 'lucide-react';
+
+// Cấu hình URL API linh hoạt (Lấy từ .env trên Vercel hoặc mặc định Render URL)
+const API_URL = import.meta.env.VITE_API_URL || 'https://luxury-boutique-3koo.onrender.com';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -42,7 +45,8 @@ export default function LoginPage() {
 
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', {
+            // Gọi API bằng URL môi trường động
+            const res = await axios.post(`${API_URL}/api/auth/login`, {
                 email: email.trim().toLowerCase(),
                 password
             });
@@ -194,7 +198,6 @@ const styles = {
     forgotLink: { fontSize: '12px', color: '#2563eb', textDecoration: 'none' },
     eyeBtn: { position: 'absolute', right: '12px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' },
 
-    // CAPTCHA BẢO MẬT DẠNG CHE NỀN
     captchaBox: {
         position: 'relative',
         backgroundColor: '#e2e8f0',
@@ -204,7 +207,7 @@ const styles = {
         height: '42px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justify: 'center',
         userSelect: 'none',
         overflow: 'hidden',
         border: '1px solid #cbd5e1'
