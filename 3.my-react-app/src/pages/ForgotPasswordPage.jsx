@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { KeyRound, Mail, Phone, CheckCircle2, ArrowLeft, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// Cấu hình URL API linh hoạt (Lấy từ .env trên Vercel hoặc mặc định Render URL)
+const API_URL = import.meta.env.VITE_API_URL || 'https://luxury-boutique-3koo.onrender.com';
+
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -12,7 +15,7 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  
+
   // State quản lý đếm ngược thời gian (30 giây)
   const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
@@ -33,7 +36,7 @@ export default function ForgotPasswordPage() {
     setError('');
     setMessage('Đang xử lý gửi mã OTP...');
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/forgot-password', { email, phone });
+      const res = await axios.post(`${API_URL}/api/auth/forgot-password`, { email, phone });
       setMessage(res.data.message || 'Mã OTP 6 số đã được gửi tới Email của bạn!');
       setStep(2);
       setCountdown(30); // Khởi chạy đếm ngược 30 giây
@@ -52,7 +55,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/reset-password', { email, otp, newPassword });
+      const res = await axios.post(`${API_URL}/api/auth/reset-password`, { email, otp, newPassword });
       alert(res.data.message || 'Mật khẩu đã được cập nhật thành công!');
       navigate('/login');
     } catch (err) {
@@ -62,7 +65,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div style={styles.bgContainer}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 35, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20 }}
@@ -84,15 +87,15 @@ export default function ForgotPasswordPage() {
               <label style={styles.label}>Email đăng ký</label>
               <div style={styles.inputWrapper}>
                 <Mail size={18} color="#94a3b8" style={styles.icon} />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   name="email"
                   autoComplete="email"
-                  placeholder="name@company.com" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  required 
-                  style={styles.input} 
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  style={styles.input}
                 />
               </div>
             </div>
@@ -101,15 +104,15 @@ export default function ForgotPasswordPage() {
               <label style={styles.label}>Số điện thoại xác minh</label>
               <div style={styles.inputWrapper}>
                 <Phone size={18} color="#94a3b8" style={styles.icon} />
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   name="phone"
                   autoComplete="tel"
-                  placeholder="0901234567" 
-                  value={phone} 
-                  onChange={e => setPhone(e.target.value)} 
-                  required 
-                  style={styles.input} 
+                  placeholder="0901234567"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  required
+                  style={styles.input}
                 />
               </div>
             </div>
@@ -121,14 +124,14 @@ export default function ForgotPasswordPage() {
             <div style={styles.inputGroup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={styles.label}>Mã OTP 6 chữ số (Gửi về Email)</label>
-                
+
                 {/* Nút đếm ngược 30s & Gửi lại OTP */}
                 {countdown > 0 ? (
                   <span style={styles.resendText}>Gửi lại sau <b>{countdown}s</b></span>
                 ) : (
-                  <button 
-                    type="button" 
-                    onClick={sendOTPRequest} 
+                  <button
+                    type="button"
+                    onClick={sendOTPRequest}
                     style={styles.resendBtn}
                   >
                     <RefreshCw size={12} />
@@ -137,28 +140,28 @@ export default function ForgotPasswordPage() {
                 )}
               </div>
 
-              <input 
-                type="text" 
-                placeholder="123456" 
-                value={otp} 
-                onChange={e => setOtp(e.target.value)} 
-                required 
-                maxLength={6} 
-                style={{ ...styles.input, paddingLeft: '12px', fontSize: '18px', textAlign: 'center', letterSpacing: '6px', fontWeight: 'bold' }} 
+              <input
+                type="text"
+                placeholder="123456"
+                value={otp}
+                onChange={e => setOtp(e.target.value)}
+                required
+                maxLength={6}
+                style={{ ...styles.input, paddingLeft: '12px', fontSize: '18px', textAlign: 'center', letterSpacing: '6px', fontWeight: 'bold' }}
               />
             </div>
 
             <div style={styles.inputGroup}>
               <label style={styles.label}>Mật khẩu mới</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 name="newPassword"
                 autoComplete="new-password"
-                placeholder="••••••••" 
-                value={newPassword} 
-                onChange={e => setNewPassword(e.target.value)} 
-                required 
-                style={{ ...styles.input, paddingLeft: '12px' }} 
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                style={{ ...styles.input, paddingLeft: '12px' }}
               />
             </div>
 
@@ -183,7 +186,7 @@ export default function ForgotPasswordPage() {
 const styles = {
   bgContainer: {
     display: 'flex',
-    justifyContent: 'center',
+    justify: 'center',
     alignItems: 'center',
     minHeight: '100vh',
     fontFamily: "'Segoe UI', sans-serif",
