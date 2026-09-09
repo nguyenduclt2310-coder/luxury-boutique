@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, User, Mail, Phone, Lock, Shield, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// Cấu hình URL API linh hoạt (Lấy từ .env trên Vercel hoặc mặc định Render URL)
+const API_URL = import.meta.env.VITE_API_URL || 'https://luxury-boutique-3koo.onrender.com';
+
 export default function RegisterPage() {
     // Mặc định chọn vai trò Customer cho người dùng mới
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', role: 'Customer' });
@@ -54,7 +57,8 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+            // Gọi API Đăng ký thông qua URL máy chủ sản xuất Render
+            const res = await axios.post(`${API_URL}/api/auth/register`, formData);
             alert(res.data.message || 'Khởi tạo tài khoản thành công!');
 
             // 🎯 PHÂN TUYẾN CHUYỂN HƯỚNG THEO DÚNG ROLE ĐÃ CHỌN
