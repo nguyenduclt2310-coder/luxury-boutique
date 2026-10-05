@@ -1,41 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
+const Order = require('../models/Order');
+const ProductVariant = require('../models/ProductVariant');
 
-router.get('/summary', async (req, res) => {
+// Lấy số liệu thống kê tổng quan cho Dashboard
+router.get('/dashboard', async (req, res) => {
     try {
-        const totalProducts = await Product.countDocuments();
-        const products = await Product.find();
+        // 1. Thống kê tổng số đơn hàng & Doanh thu thực tế (chỉ tính đơn đã thanh toán/hoàn thành)
+        const orders = await Order.find();
+        const totalOrders = orders.length;
+        const totalRevenue = orders
+            .filter((o) => o.orderStatus === 'delivered' || o.paymentStatus === 'paid')
+            .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
-        // Tính tổng giá trị toàn bộ sản phẩm
-        const totalInventoryValue = products.reduce((acc, p) => acc + (p.price * p.stock), 0);
-        const outOfStockCount = products.filter(p => p.stock === 0).length;
+        const pendingOrders = orders.filter((o) => o.orderStatus === 'pending').length;
 
-        // Gom nhóm tổng giá trị sản phẩm nhập theo từng tháng thực tế
-        const monthlyData = await Product.aggregate([
-            {
-                $group: {
-                    _id: { $month: "$createdAt" },
-                    revenue: { $sum: { $multiply: ["$price", "$stock"] } }
-                }
-            },
-            { $sort: { "_id": 1 } }
-        ]);
+        // 2. Cảnh báo tồn kho thấp (sản phẩm có stock < 5)
+        const lowStockVariants = await ProductVariant.find({ stock: { $lt: 5 } }).populate('productId');
 
-        const monthlyRevenue = monthlyData.map(item => ({
-            month: `Tháng ${item._id}`,
-            revenue: item.revenue
-        }));
+        // 3. Lấy 5 đơn hàng mới nhất
+        const recentOrders = await Order.find().sort({ createdAt: -1 }).limit(5);
 
         res.json({
-            totalProducts,
-            totalInventoryValue,
-            outOfStockCount,
-            totalOrders: totalProducts,
-            monthlyRevenue: monthlyRevenue.length > 0 ? monthlyRevenue : [{ month: 'Tháng này', revenue: totalInventoryValue }]
+            success: true,
+            data: {
+                totalRevenue,
+                totalOrders,
+                pendingOrders,
+                lowStockCount: lowStockVariants.length,
+                recentOrders,
+                lowStockVariants,
+            },
         });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
