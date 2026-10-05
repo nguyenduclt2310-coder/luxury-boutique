@@ -1,126 +1,224 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, DollarSign, ShoppingBag, AlertTriangle, ShieldCheck, UserCheck, Clock } from 'lucide-react';
+import { DollarSign, ShoppingBag, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
-    const [stats, setStats] = useState(null);
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const activeTab = queryParams.get('tab') || 'revenue';
+
+    const [stats, setStats] = useState({
+        totalRevenue: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        lowStockCount: 0,
+        recentOrders: [],
+        lowStockVariants: []
+    });
+    const [loading, setLoading] = useState(true);
+
+    const fetchDashboardStats = async () => {
+        try {
+            setLoading(true);
+            const res = await axios.get('http://localhost:5000/api/stats/dashboard');
+            if (res.data.success) {
+                setStats(res.data.data);
+            }
+        } catch (err) {
+            console.error('Lỗi tải thống kê dashboard:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/stats/summary')
-            .then(res => setStats(res.data))
-            .catch(err => console.error('Lỗi tải thống kê:', err));
+        fetchDashboardStats();
     }, []);
 
-    if (!stats) return <div style={{ padding: '20px', color: '#64748b' }}>Đang tải dữ liệu tổng quan...</div>;
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Banner Chào Mừng Phân Theo Quyền */}
-            <div style={styles.welcomeBanner}>
-                <div>
-                    <h2 style={{ margin: 0, color: '#0f172a' }}>Xin chào, {user.name || 'Người dùng'} 👋</h2>
-                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
-                        Vai trò hệ thống: <span style={styles.roleBadge}>{user.role || 'Staff'}</span>
-                    </p>
-                </div>
+        <div style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ color: '#0f172a', margin: 0 }}>
+                    {activeTab === 'revenue' && '📈 Thống Kê Doanh Thu & Đơn Hàng'}
+                    {activeTab === 'pending' && '⏳ Danh Sách Đơn Hàng Chờ Xử Lý'}
+                    {activeTab === 'stock' && '⚠️ Cảnh Báo Tồn Kho Sắp Hết'}
+                </h2>
+                <button
+                    onClick={fetchDashboardStats}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+                >
+                    <RefreshCw size={16} /> Cập nhật dữ liệu
+                </button>
             </div>
 
-            {/* 1. Giao diện cho Admin & Manager (Đầy đủ KPI Kho, Tiền và Biểu đồ) */}
-            {['Admin', 'Manager'].includes(user.role) && (
+            {loading ? (
+                <p>Đang tải dữ liệu...</p>
+            ) : (
                 <>
-                    <div style={styles.cardGrid}>
-                        <div style={styles.card}>
-                            <div>
-                                <p style={styles.cardLabel}>Tổng sản phẩm</p>
-                                <h3 style={styles.cardVal}>{stats.totalProducts}</h3>
-                            </div>
-                            <Package color="#2563eb" size={32} />
-                        </div>
+                    {/* TAB 1: THỐNG KÊ DOANH THU */}
+                    {activeTab === 'revenue' && (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '30px' }}>
+                                <div style={cardStyle}>
+                                    <div>
+                                        <span style={{ fontSize: '13px', color: '#64748b' }}>Tổng Doanh Thu</span>
+                                        <h3 style={{ margin: '8px 0 0', color: '#059669', fontSize: '20px' }}>
+                                            {stats.totalRevenue.toLocaleString('vi-VN')} đ
+                                        </h3>
+                                    </div>
+                                    <div style={{ ...iconBgStyle, backgroundColor: '#d1fae5', color: '#059669' }}>
+                                        <DollarSign size={22} />
+                                    </div>
+                                </div>
 
-                        <div style={styles.card}>
-                            <div>
-                                <p style={styles.cardLabel}>Tổng giá trị kho</p>
-                                <h3 style={styles.cardVal}>{(stats.totalInventoryValue || 0).toLocaleString('vi-VN')} đ</h3>
+                                <div style={cardStyle}>
+                                    <div>
+                                        <span style={{ fontSize: '13px', color: '#64748b' }}>Tổng Đơn Hàng</span>
+                                        <h3 style={{ margin: '8px 0 0', color: '#2563eb', fontSize: '20px' }}>{stats.totalOrders}</h3>
+                                    </div>
+                                    <div style={{ ...iconBgStyle, backgroundColor: '#dbeafe', color: '#2563eb' }}>
+                                        <ShoppingBag size={22} />
+                                    </div>
+                                </div>
                             </div>
-                            <DollarSign color="#16a34a" size={32} />
-                        </div>
 
-                        <div style={styles.card}>
-                            <div>
-                                <p style={styles.cardLabel}>Tổng mục hàng</p>
-                                <h3 style={styles.cardVal}>{stats.totalOrders}</h3>
+                            <div style={sectionBoxStyle}>
+                                <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#1e293b' }}>🛒 Đơn Hàng Mới Nhất</h3>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
+                                            <th style={{ padding: '10px' }}>Mã Đơn</th>
+                                            <th style={{ padding: '10px' }}>Khách Hàng</th>
+                                            <th style={{ padding: '10px' }}>Tổng Tiền</th>
+                                            <th style={{ padding: '10px' }}>Trạng Thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.recentOrders.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Chưa có đơn hàng nào</td>
+                                            </tr>
+                                        ) : (
+                                            stats.recentOrders.map((o) => (
+                                                <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#2563eb' }}>{o.orderNumber || o._id.substring(0, 6)}</td>
+                                                    <td style={{ padding: '10px' }}>{o.customerInfo?.fullName || 'N/A'}</td>
+                                                    <td style={{ padding: '10px', fontWeight: 'bold' }}>{o.totalAmount?.toLocaleString('vi-VN')} đ</td>
+                                                    <td style={{ padding: '10px' }}>
+                                                        <span style={{ backgroundColor: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{o.orderStatus}</span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
-                            <ShoppingBag color="#9333ea" size={32} />
                         </div>
+                    )}
 
-                        <div style={styles.card}>
-                            <div>
-                                <p style={styles.cardLabel}>Cảnh báo hết hàng</p>
-                                <h3 style={{ ...styles.cardVal, color: stats.outOfStockCount > 0 ? '#dc2626' : '#0f172a' }}>
-                                    {stats.outOfStockCount}
-                                </h3>
+                    {/* TAB 2: ĐƠN CHỜ XỬ LÝ */}
+                    {activeTab === 'pending' && (
+                        <div style={sectionBoxStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                <Clock color="#d97706" size={24} />
+                                <h3 style={{ margin: 0, fontSize: '18px', color: '#d97706' }}>Danh Sách Đơn Hàng Cần Xác Nhận Gấp</h3>
                             </div>
-                            <AlertTriangle color="#dc2626" size={32} />
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
+                                        <th style={{ padding: '10px' }}>Mã Đơn</th>
+                                        <th style={{ padding: '10px' }}>Khách Hàng</th>
+                                        <th style={{ padding: '10px' }}>SĐT</th>
+                                        <th style={{ padding: '10px' }}>Tổng Tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.recentOrders.filter(o => o.orderStatus === 'pending').length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#059669', fontWeight: 'bold' }}>
+                                                ✅ Không có đơn hàng nào đang chờ xử lý!
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        stats.recentOrders.filter(o => o.orderStatus === 'pending').map((o) => (
+                                            <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '10px', fontWeight: 'bold', color: '#2563eb' }}>{o.orderNumber || o._id.substring(0, 6)}</td>
+                                                <td style={{ padding: '10px' }}>{o.customerInfo?.fullName || 'N/A'}</td>
+                                                <td style={{ padding: '10px' }}>{o.customerInfo?.phone || 'N/A'}</td>
+                                                <td style={{ padding: '10px', fontWeight: 'bold', color: '#d97706' }}>{o.totalAmount?.toLocaleString('vi-VN')} đ</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                    )}
 
-                    <div style={styles.chartContainer}>
-                        <h3 style={{ marginBottom: '16px', color: '#1e293b' }}>📊 Doanh Thu Theo Tháng</h3>
-                        <div style={{ width: '100%', height: 350 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyRevenue}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value) => `${value.toLocaleString('vi-VN')} VNĐ`} />
-                                    <Bar dataKey="revenue" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                    {/* TAB 3: CẢNH BÁO TỒN KHO */}
+                    {activeTab === 'stock' && (
+                        <div style={sectionBoxStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                <AlertTriangle color="#dc2626" size={24} />
+                                <h3 style={{ margin: 0, fontSize: '18px', color: '#dc2626' }}>Cảnh Báo Tồn Kho (&lt; 5 sản phẩm)</h3>
+                            </div>
+
+                            {stats.lowStockVariants.length === 0 ? (
+                                <p style={{ color: '#059669', fontSize: '15px', fontWeight: '500' }}>
+                                    ✅ Tất cả sản phẩm trong kho đều đang ở mức an toàn!
+                                </p>
+                            ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
+                                            <th style={{ padding: '12px' }}>Tên Sản Phẩm</th>
+                                            <th style={{ padding: '12px' }}>Biến Thể (Size/Màu)</th>
+                                            <th style={{ padding: '12px' }}>Số Lượng Tồn Kho</th>
+                                            <th style={{ padding: '12px' }}>Mã SKU</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.lowStockVariants.map((v) => (
+                                            <tr key={v._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '12px', fontWeight: 'bold' }}>{v.productId?.name || 'Sản phẩm'}</td>
+                                                <td style={{ padding: '12px' }}>{`${v.attributes?.size || 'FREE'} - ${v.attributes?.color || 'N/A'}`}</td>
+                                                <td style={{ padding: '12px', color: '#dc2626', fontWeight: 'bold' }}>Còn {v.stock}</td>
+                                                <td style={{ padding: '12px', fontSize: '12px', color: '#64748b' }}>{v.sku}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
-                    </div>
+                    )}
                 </>
-            )}
-
-            {/* 2. Giao diện riêng cho Staff (Tác vụ cá nhân đơn giản) */}
-            {user.role === 'Staff' && (
-                <div style={styles.cardGrid}>
-                    <div style={styles.card}>
-                        <div>
-                            <p style={styles.cardLabel}>Đơn hàng đã lập</p>
-                            <h3 style={styles.cardVal}>{stats.totalOrders || 0} Đơn</h3>
-                        </div>
-                        <UserCheck color="#2563eb" size={32} />
-                    </div>
-
-                    <div style={styles.card}>
-                        <div>
-                            <p style={styles.cardLabel}>Tác vụ chờ xử lý</p>
-                            <h3 style={styles.cardVal}>2 Việc</h3>
-                        </div>
-                        <Clock color="#eab308" size={32} />
-                    </div>
-
-                    <div style={styles.card}>
-                        <div>
-                            <p style={styles.cardLabel}>Tình trạng tài khoản</p>
-                            <h3 style={{ ...styles.cardVal, color: '#16a34a', fontSize: '16px' }}>Đang hoạt động</h3>
-                        </div>
-                        <ShieldCheck color="#16a34a" size={32} />
-                    </div>
-                </div>
             )}
         </div>
     );
 }
 
-const styles = {
-    welcomeBanner: { backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-    roleBadge: { backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' },
-    cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' },
-    card: { backgroundColor: '#fff', padding: '20px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-    cardLabel: { fontSize: '14px', color: '#64748b', margin: 0 },
-    cardVal: { fontSize: '20px', fontWeight: 'bold', margin: '5px 0 0 0', color: '#0f172a' },
-    chartContainer: { backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+const cardStyle = {
+    backgroundColor: '#fff',
+    padding: '16px',
+    borderRadius: '8px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+};
+
+const iconBgStyle = {
+    width: '44px',
+    height: '44px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+};
+
+const sectionBoxStyle = {
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
 };
